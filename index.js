@@ -1,49 +1,39 @@
-const http = require('http');
-const url = require('url');
-const fs = require('fs/promises');
+const express = require('express');
+const fs = require('fs');
 
-const hostname = 'localhost';
+const app = express();
 const port = 8080;
 const encoding = 'utf-8';
 
-const processRequest = (data, res, statusCode = 200) => {
-  res.statusCode = statusCode;
-  res.setHeader('Content-Type', 'text/html');
-  res.write(data);
-  res.end();
+const handleRequest = (file, res) => {
+  fs.readFile(file , encoding, (err, data) => {
+    if (err) 
+      console.error(err);
+
+    res.write(data);
+    res.end();
+  });
 }
 
-const server = http.createServer(async (req, res) => {
-  const adr = url.parse(req.url, true);
-
-  try {
-    switch (adr.pathname) {
-      case '/': {
-        const file = await fs.readFile('./index.html', encoding);
-        processRequest(file, res);
-        break;
-      }
-      case '/about': {
-        const file = await fs.readFile('./about.html', encoding);
-        processRequest(file, res);
-        break;
-      }    
-      case '/contact-me': {
-        const file = await fs.readFile('./contact-me.html', encoding);
-        processRequest(file, res);
-        break;
-      }    
-      default: {
-        throw new Error('404 not found');
-      }        
-    }
-
-  } catch {
-    const file = await fs.readFile('./404.html', encoding);
-    processRequest(file, res, 404);
-  } 
+app.get('/', (req, res) => {
+  handleRequest('./index.html', res);
 });
 
-server.listen(port, hostname, () => {
-  console.log(`Server listening on http://${hostname}:${port}`);
+app.get('/about', (req, res) => {
+  handleRequest('./about.html', res);
+});
+
+app.get('/contact', (req, res) => {
+  handleRequest('./contact-me.html', res);
+});
+
+app.use((req, res, next) => {
+  fs.readFile('./404.html', encoding, (err, data) => {
+    res.status(404).write(data);
+    res.end();
+  });
+});
+
+app.listen(port, () => {
+  console.log(`Server is listening on port ${port}`);
 });
